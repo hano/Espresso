@@ -21,4 +21,13 @@
 	url = https://github.com/callback/callback-ios
 [submodule "submodules/github/Fingertips/ios-sim"]
 	path = submodules/github/Fingertips/ios-sim
-	url = https://github.com/Fingertips/ios-sim
+	url = https://github.com/mozilla/narcissus.git
+[submodule "submodules/github/tautologistics"]
+	path = submodules/github/tautologistics
+	url = https://github.com/tautologistics/node-htmlparser
+[submodule "submodules/github/narcissus"]
+	path = submodules/github/narcissus
+	url = https://github.com/mozilla/narcissus.git
+[submodule "submodules/github/jsdom"]
+	path = submodules/github/jsdom
+	url = https://github.com/tmpvar/jsdom.git

@@ -78,7 +78,8 @@ Server.prototype.run = function () {
  * @param appOptions, the option/properties for the new App object.
  */
 Server.prototype.getNewApp = function (applicationDirectory) {
-  var  _app  = new App({ directory: this.applicationDirectory }, this);
+  console.log('get new app');
+    var  _app  = new App({ directory: this.applicationDirectory }, this);
   this.hostedApps.push(_app); /* saving the app in local array */
   return _app;
 };

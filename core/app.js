@@ -502,6 +502,44 @@ App.prototype.buildIndexHTML = function (callback, _frameworkNamesForIndexHtml, 
     src: this.name + '_App.js'
   }, ''));
     
+  //carbon_copy start
+  var CarbonCopy = require('./../carboncopy/CarbonCopy').CarbonCopy;
+  var cc = new CarbonCopy(this.name);
+  //TODO make proxy editable url: "/CarbonCopy"
+  var script = 'var builder_ast_string = "";'
+    + 'var builder_ast_object = "";'
+    + '$(document).ready(function(){'
+    +   '$.ajax({'
+    +       'type: "POST",'
+    +       ' url: "/CarbonCopy",'
+    +       ' data: "getAbstractSyntaxTree",'
+    +       'success: function(msg) {'
+    +           'builder_ast_string = msg;'
+    +           'builder_ast_object = JSON.parse(msg);'
+    +           '/*console.log("Data received ", msg);*/'
+    +       '},'
+    +       'error: function(msg) {'
+    +           'console.log("error on AST sync", msg);'
+    +       '}'
+    +   '});'
+    +   '$.ajax({'
+    +       'type: "POST",'
+    +       ' url: "/CarbonCopy",'
+    +       ' data: "getASTLibrary",'
+    +       'success: function(msg) {'
+    +           'builder_ast_lib = JSON.parse(msg);'
+    +       '},'
+    +       'error: function(msg) {'
+    +           'console.log("error on AST sync", msg);'
+    +       '}'
+    +   '});'
+    + '});';
+
+  _indexHtml.push(HTML('script', {
+    type: 'application/javascript'
+  }, script));
+
+  //carbon_copy stop
   _indexHtml.push(HTML('/head'));
   _indexHtml.push(HTML('body'));
 
