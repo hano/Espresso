@@ -39,6 +39,7 @@ Task_Merge.prototype = new Task();
  * @param framework the reference to the framework this task is working with.
  */
 Task_Merge.prototype.duty = function duty(framework, callback) {
+    console.log('Files: ' + framework.path + ' ' + framework.name);
   var that = this;
   this.files = [];
   this.notJSfiles = [];
@@ -53,6 +54,7 @@ Task_Merge.prototype.duty = function duty(framework, callback) {
         //that.notJSfiles.push(file);
       }
     });
+
 
   that.files.push(new File({
         frDelimiter: framework.frDelimiter,

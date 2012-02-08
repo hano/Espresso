@@ -35,7 +35,6 @@ var Server = exports.Server = function (options) {
   /*Properties*/
   this.hostname = '127.0.0.1'; //default address
   this.port = options.port;
-
   this.applicationDirectory = options.directory;
 
   this.manifestMode = options.manifest;
@@ -78,8 +77,7 @@ Server.prototype.run = function () {
  * @param appOptions, the option/properties for the new App object.
  */
 Server.prototype.getNewApp = function (applicationDirectory) {
-  console.log('get new app');
-    var  _app  = new App({ directory: this.applicationDirectory }, this);
+  var  _app  = new App({ directory: this.applicationDirectory }, this);
   this.hostedApps.push(_app); /* saving the app in local array */
   return _app;
 };
@@ -272,6 +270,7 @@ Server.prototype.runManifestServer = function () {
   var _file, _requestedURL;
 
   function startServer() {
+      console.log('START SERVER');
     this.appServer = Http.createServer(function (request, response) {
         _requestedURL = Url.parse(request.url);
         Utils.log('Requesting : ' + _requestedURL.pathname);

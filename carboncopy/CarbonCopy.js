@@ -3,150 +3,119 @@ var htmlparser = require("htmlparser");
 var qs = require('querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
 var ccServer;
+var sys = require('sys');
+var server = require('../core/server.js').Server;
+var Url = require('url');
 
-var CarbonCopy = exports.CarbonCopy = function (appName, hostName, port) {
+var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
-    this.appName = appName ? appName : 'CarbonCopy';
-    this.appFile = this.appName + '_App.js';
-    this.hostName = hostName ? hostName : '127.0.0.1';
-    this.port = port ? port : 8000;
-    this.http = require('http');
-    this.ASTLib = {};
-
+var CarbonCopy = exports.CarbonCopy = function (options) {
+    var that = this;
+    this.reservedURLs = {getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application' };
     this.abstractSyntaxTree = '';
     this.code = '';
+    this.SourceCodeFiles = {};
 
+    CarbonCopy.super_.call(this, options);
+
+    this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName);
+    this.initTMPApplication(options);
+};
+
+sys.inherits(CarbonCopy, server);
+
+/********* overwrite */
+
+CarbonCopy.prototype.getNewApp = function (request, response) {
+
+    var app = server.prototype.getNewApp.call(this, request, response);
+    app.__getFiles__ = function (files) {
+        var that = this;
+        var ret = {};
+        Object.keys(that.frameworks).forEach(function (a, b) {
+            var fr = (that.frameworks[a].path.split('/').pop());
+            if (files[fr]) {
+                ret[fr] = (that.frameworks[a].files[0]);
+            }
+        });
+        return ret;
+    };
+    return app;
+};
+
+CarbonCopy.prototype.proxyThat = function (request, response) {
     var that = this;
+    var body = '';
 
-    this.server();
-
-    this.doRequests(that.appFile, function(resp) {
-        that.code = resp[that.appFile];
-        that.abstractSyntaxTree = Narcissus.parser.parse(that.code);
+    request.on('data', function (data) {
+        body += data;
     });
 
-    this.doRequests('core.js', function(resp) {
-
-        var coreJs = resp['core.js'];
-
-        that.doRequests('ui.js', function(resp) {
-            var uiJs = resp['ui.js'];
-            var M = that.browserSimulation(coreJs, uiJs);
-            that.ASTLib = that.generateASTfromView(M);
-        });
+    request.on('end', function () {
+        var _path = Url.parse(request.url).pathname.slice(1);
+        var _pr = _path.split('/')[0];
+        if (_pr === 'tmpbuilder') {
+            var file = _path.split('tmpbuilder/').join('');
+            if (that.reservedURLs[file]) {
+                console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ' + file);
+                if (file === 'application') {
+                    that.tmpbp.redirectToApplication(response);
+                } else if (file === 'getASTLibrary') {
+                    console.log(Object.keys(that.SourceCodeFiles));
+                    var M = that.browserSimulation(that.SourceCodeFiles['core'].content, that.SourceCodeFiles['ui'].content);
+                    var ASTLib = that.generateASTfromView(M);
+                    that.tmpbp.sendFile(ASTLib, response);
+                } else if (file === 'getAbstractSyntaxTree') {
+                    console.log(that.SourceCodeFiles['app'].content);
+                    try{
+                        that.tmpbp.sendFile(Narcissus.parser.parse(that.SourceCodeFiles['app'].content), response);
+                    }catch(e){
+                        console.log('error parsing source');
+                    }
+                } else if (file === 'setAbstractSyntaxTree') {
+                    var post = qs.parse(body);
+                    that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
+                    var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
+                    console.log(x);
+                    that.writeFile(x);
+                    that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
+                }
+            } else {
+                that.tmpbp.deliver(response, _path);
+            }
+        } else {
+            //TODO test if this is working
+            server.prototype.proxyThat.call(this, request, response);
+        }
     });
 };
 
-/**
- * requests all files through the given string or array and calls on success the callback function
- * with all responses in one var
- *
- */
-CarbonCopy.prototype.doRequests = function(requests, callback) {
-    var that = this,
-        responseCounter = 0,
-        _requests = [],
-        _response = {};
+/********* own implementations */
 
-    if (typeof(requests) === 'string') {
-        _requests[0] = requests;
-    } else {
-        _requests = requests
-    }
-    var sync = function(counter) {
-        if (counter >= _requests.length) {
-            callback(_response);
-        }
-    }
-    _requests.forEach(function(url, c) {
-//            /tmp_builder/Rules.js
-        var options = {
-            host: that.hostName,
-            port: that.port,
-            path: '/' + that.appName + '/' + url
-        };
-
-//        console.log(options.host);
-//        console.log(options.port);
-//        console.log(options.path);
-
-        that.http.get(options,
-            function(res) {
-                var content = '';
-                res.setEncoding('utf-8');
-                res.on('data', function(chunk) {
-                    content += chunk;
-                });
-                res.on('end', function() {
-                    _response[url] = content;
-                    responseCounter += 1;
-                    sync(responseCounter);
-                });
-            }).on('error', function(e) {
-                console.log("Got error: " + e.message);
-            });
-    });
-}
-
-
-CarbonCopy.prototype.server = function () {
-
-//    if a server runs close it
-    if (ccServer)  ccServer.close();
+CarbonCopy.prototype.initTMPApplication = function (options) {
 
     var that = this;
+    var app = this.getNewApp(this, options.directory);
 
-    ccServer = this.http.createServer(function (request, response) {
+    app.offlineManifest = false;
 
-        var body = '';
+    app.loadTheApplication();
+    app.loadTheMProject();
 
-        request.on('data', function(data) {
-            body += data;
-        });
-
-        request.on('end', function() {
-            var post = qs.parse(body);
-            if (body === 'getASTLibrary') {
-                if (that.ASTLib) {
-                    var btn = that.ASTLib['M.LabelView'];
-                    response.write(JSON.stringify(that.ASTLib), encoding = 'utf8');
-                } else {
-                    response.write('ASTLIB NOT READY YET', encoding = 'utf8');
-                }
-            } else if (body === 'getCode') {
-                response.write(that.code, encoding = 'utf8');
-            } else if (body === 'getAbstractSyntaxTree') {
-
-                a = that.abstractSyntaxTree;
-
-                var ast = JSON.stringify(a);
-                var _a = JSON.parse(ast);
-//                console.log(_a.children[0].expression.children);
-                response.write(ast, encoding = 'utf8');
-            } else if (post.setAbstractSyntaxTree) {
-                var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
-                console.log(x);
-                that.writeFile(x);
-                that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
-            }
-            response.end();
-        });
-
+    app.build(function (options) {
+        var getFiles = {ui:true, core:true, app:true};
+        var SourceCodeFiles = app.__getFiles__(getFiles);
+        that.setSourceCodeFiles(SourceCodeFiles);
     });
+};
 
-    var port = this.port,
-        that = this;
+CarbonCopy.prototype.setSourceCodeFiles = function (SourceCodeFiles) {
+    this.SourceCodeFiles = SourceCodeFiles;
+};
 
-    port += 1;
+CarbonCopy.prototype.writeFile = function (obj, name) {
 
-    ccServer.listen(port, function () {
-        console.log('Server running at http://' + that.hostName + ':' + port + '/');
-    });
-}
-
-CarbonCopy.prototype.writeFile = function(obj, name) {
-
-    var _name = name ? name : 'app/new_main.js'
+    var _name = name ? name : 'app/main.js'
     var fs = require('fs');
 
     fs.writeFile('' + _name, '', function (err) {
@@ -158,13 +127,12 @@ CarbonCopy.prototype.writeFile = function(obj, name) {
     });
 }
 
-
-CarbonCopy.prototype.browserSimulation = function() {
+CarbonCopy.prototype.browserSimulation = function () {
     var jsdom = require("jsdom").jsdom;
 
-    var jsdom  = require("jsdom").jsdom,
-        document    = jsdom(null, null),
-        window = document.createWindow();
+    var jsdom = require("jsdom").jsdom,
+            document = jsdom(null, null),
+            window = document.createWindow();
 
     //var dom = jsdom(null, null);
     //var browser = jsdom.windowAugmentation(dom);
@@ -177,21 +145,21 @@ CarbonCopy.prototype.browserSimulation = function() {
 
     var code = '';
     var args = Array.prototype.slice.call(arguments);
-    Object.keys(args).forEach(function(key) {
+    Object.keys(args).forEach(function (key) {
         code += (args[key]);
     });
     eval(code);
-    
-    return M;
-}
 
-CarbonCopy.prototype.generateASTfromView = function(M, asJSON) {
+    return M;
+};
+
+CarbonCopy.prototype.generateASTfromView = function (M, asJSON) {
 
     var viewLib = new ViewLibrary(M);
     viewLib.tmpCode();
 
     var viewsAsAST = {};
-    Object.keys(viewLib.lib).forEach(function(key) {
+    Object.keys(viewLib.lib).forEach(function (key) {
 //        TODO IMPLEMENT MAPVIEW AND MapMarkerView!!!
         if (key === 'M.MapView' || key === 'M.MapMarkerView') {
             //console.log(viewLib.lib[key]);
@@ -206,5 +174,36 @@ CarbonCopy.prototype.generateASTfromView = function(M, asJSON) {
     viewsAsAST['childViewName'] = Narcissus.parser.parse('content: M.ScrollView.design({label: M.LabelView.design({value: "lala"})});').children[0].target.expression.children[1].children[0].children[0];
 
     return viewsAsAST;
+};
 
-}
+CarbonCopy.prototype.getScript = function () {
+    var script = 'var builder_ast_string = "";'
+            + 'var builder_ast_object = "";'
+            + '$(document).ready(function(){'
+            + '$.ajax({'
+            + 'type: "POST",'
+            + ' url: "/CarbonCopy",'
+            + ' data: "getAbstractSyntaxTree",'
+            + 'success: function(msg) {'
+            + 'builder_ast_string = msg;'
+            + 'builder_ast_object = JSON.parse(msg);'
+            + '/*console.log("Data received ", msg);*/'
+            + '},'
+            + 'error: function(msg) {'
+            + 'console.log("error on AST sync", msg);'
+            + '}'
+            + '});'
+            + '$.ajax({'
+            + 'type: "POST",'
+            + ' url: "/CarbonCopy",'
+            + ' data: "getASTLibrary",'
+            + 'success: function(msg) {'
+            + 'builder_ast_lib = JSON.parse(msg);'
+            + '},'
+            + 'error: function(msg) {'
+            + 'console.log("error on AST sync", msg);'
+            + '}'
+            + '});'
+            + '});';
+    return script;
+};

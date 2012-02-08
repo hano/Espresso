@@ -244,7 +244,7 @@ Framework.prototype.browseFiles = function (path, callback) {
                 });
             } else {
               if (!that.checkIfFileShouldBeExcluded(path)) {
-                framework.files.push(
+                  framework.files.push(
                   new File({
                       frDelimiter: framework.frDelimiter,
                       name: path,
