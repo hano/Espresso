@@ -1,6 +1,6 @@
-var Narcissus = require('Narcissus');
-var htmlparser = require("htmlparser");
-var qs = require('querystring');
+var Narcissus = require('../submodules/github/narcissus');
+var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
+//var qs = require('querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
 var ccServer;
 var sys = require('sys');
@@ -82,12 +82,12 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                         console.log('error parsing source');
                     }
                 } else if (file === 'setAbstractSyntaxTree') {
-                    var post = qs.parse(body);
-                    that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
-                    var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
-                    console.log(x);
-                    that.writeFile(x);
-                    that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
+                    //var post = qs.parse(body);
+                    //that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
+                    //var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
+                    //console.log(x);
+                    //that.writeFile(x);
+                    //that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
                 }
             } else {
                 that.tmpbp.deliver(response, _path);
