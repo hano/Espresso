@@ -6,6 +6,7 @@ var ccServer;
 var sys = require('sys');
 var server = require('../core/server.js').Server;
 var Url = require('url');
+var Utils = require('../lib/espresso_utils');
 
 var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
@@ -17,6 +18,7 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
     this.SourceCodeFiles = {};
 
     CarbonCopy.super_.call(this, options);
+
 
     this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName);
     this.initTMPApplication(options);
@@ -106,6 +108,7 @@ CarbonCopy.prototype.initTMPApplication = function (options) {
         var getFiles = {ui:true, core:true, app:true};
         var SourceCodeFiles = app.__getFiles__(getFiles);
         that.setSourceCodeFiles(SourceCodeFiles);
+        Utils.log('Builder running at ' + that.hostname + ':' + that.port + '/tmpbuilder');
     });
 };
 
