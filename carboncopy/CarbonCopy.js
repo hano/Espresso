@@ -19,14 +19,21 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
 
     CarbonCopy.super_.call(this, options);
 
+    this.loadJSONConfig();
 
-    this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName);
+    this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName, this.tmpBuilderPath);
     this.initTMPApplication(options);
 };
 
 sys.inherits(CarbonCopy, server);
 
 /********* overwrite */
+
+CarbonCopy.prototype.loadJSONConfig = function (request, response) {
+    var config = Utils.readConfig(this.applicationDirectory);
+    this.tmpBuilderPath = config.builder.TMPBuilderPath;
+    server.prototype.loadJSONConfig.call(this, request, response);
+};
 
 CarbonCopy.prototype.getNewApp = function (request, response) {
 

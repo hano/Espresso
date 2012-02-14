@@ -5,6 +5,7 @@ var TMPBuilderProxy = exports.TMPBuilderProxy = function () {
     this.ip = arguments[0];
     this.port = arguments[1];
     this.appName = arguments[2];
+    this.filePath = arguments[3];
     this.appFile = this.appName + '_App.js';
 
     this.ASTLib = this.buildASTLib();
@@ -39,7 +40,7 @@ TMPBuilderProxy.prototype.deliver = function (response, _path) {
     var file = _path.split('tmpbuilder/').join('');
 
 //    console.log(file);
-    var filePath = '/Users/mway/Dropbox/masterthesis/git/tmp-builder/';
+    var filePath = this.filePath ? this.filePath : '/Users/mway/Dropbox/masterthesis/git/tmp-builder/';
 
 //    console.log(_pr + ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
 
