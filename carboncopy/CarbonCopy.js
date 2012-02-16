@@ -1,4 +1,5 @@
 var Narcissus = require('../submodules/github/narcissus');
+//var Narcissus = require('narcissus');
 //var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
 var qs = require('../submodules/github/querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
@@ -67,7 +68,6 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
         if (_pr === 'tmpbuilder') {
             var file = _path.split('tmpbuilder/').join('');
             if (that.reservedURLs[file]) {
-                console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ' + file);
                 if (file === 'application') {
                     that.tmpbp.redirectToApplication(response);
                 } else if (file === 'getASTLibrary') {
@@ -77,6 +77,7 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                     console.log(ASTLib);
                     that.tmpbp.sendFile(ASTLib, response);
                 } else if (file === 'getAbstractSyntaxTree') {
+                    console.log('GET getAbstractSyntaxTree');
                     console.log(that.SourceCodeFiles['app'].content);
                     try{
                         that.tmpbp.sendFile(Narcissus.parser.parse(that.SourceCodeFiles['app'].content), response);
@@ -85,9 +86,8 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                     }
                 } else if (file === 'setAbstractSyntaxTree') {
                     var post = qs.parse(body);
-                    that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
                     var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
-                    console.log(x);
+                    that.SourceCodeFiles['app'].content = x;
                     that.writeFile(x);
                     that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
                 }
