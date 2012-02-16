@@ -1,6 +1,6 @@
 var Narcissus = require('../submodules/github/narcissus');
-var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
-//var qs = require('querystring');
+//var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
+var qs = require('../submodules/github/querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
 var ccServer;
 var sys = require('sys');
@@ -31,8 +31,7 @@ sys.inherits(CarbonCopy, server);
 
 CarbonCopy.prototype.loadJSONConfig = function (request, response) {
     var config = Utils.readConfig(this.applicationDirectory);
-    if(config && config.builder && config.builder.TMPBuilderPath)
-        this.tmpBuilderPath = config.builder.TMPBuilderPath;
+    this.tmpBuilderPath = config.builder.TMPBuilderPath;
     server.prototype.loadJSONConfig.call(this, request, response);
 };
 
@@ -74,6 +73,7 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                     console.log(Object.keys(that.SourceCodeFiles));
                     var M = that.browserSimulation(that.SourceCodeFiles['core'].content, that.SourceCodeFiles['ui'].content);
                     var ASTLib = that.generateASTfromView(M);
+                    console.log(ASTLib);
                     that.tmpbp.sendFile(ASTLib, response);
                 } else if (file === 'getAbstractSyntaxTree') {
                     console.log(that.SourceCodeFiles['app'].content);
@@ -83,12 +83,12 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                         console.log('error parsing source');
                     }
                 } else if (file === 'setAbstractSyntaxTree') {
-                    //var post = qs.parse(body);
-                    //that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
-                    //var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
-                    //console.log(x);
-                    //that.writeFile(x);
-                    //that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
+                    var post = qs.parse(body);
+                    that.SourceCodeFiles['app'].content = post.setAbstractSyntaxTree;
+                    var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
+                    console.log(x);
+                    that.writeFile(x);
+                    that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
                 }
             } else {
                 that.tmpbp.deliver(response, _path);
