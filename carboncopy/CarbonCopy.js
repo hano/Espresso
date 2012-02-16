@@ -31,7 +31,8 @@ sys.inherits(CarbonCopy, server);
 
 CarbonCopy.prototype.loadJSONConfig = function (request, response) {
     var config = Utils.readConfig(this.applicationDirectory);
-    this.tmpBuilderPath = config.builder.TMPBuilderPath;
+    if(config && config.builder && config.builder.TMPBuilderPath)
+        this.tmpBuilderPath = config.builder.TMPBuilderPath;
     server.prototype.loadJSONConfig.call(this, request, response);
 };
 
