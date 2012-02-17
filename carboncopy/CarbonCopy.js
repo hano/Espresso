@@ -11,12 +11,17 @@ var Utils = require('../lib/espresso_utils');
 
 var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
+//TODO use require('path') for os compatibility
+
 var CarbonCopy = exports.CarbonCopy = function (options) {
     var that = this;
     this.reservedURLs = {getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application' };
     this.abstractSyntaxTree = '';
     this.code = '';
     this.SourceCodeFiles = {};
+    //TODO is the / working on not unix systems?  look at require('path')
+    this.applicationSourcePath = options.directory ? options.directory + '/' : '';
+    console.log(this.applicationSourcePath);
 
     CarbonCopy.super_.call(this, options);
 
@@ -127,12 +132,13 @@ CarbonCopy.prototype.setSourceCodeFiles = function (SourceCodeFiles) {
 
 CarbonCopy.prototype.writeFile = function (obj, name) {
 
+    var that = this;
     var _name = name ? name : 'app/main.js'
     var fs = require('fs');
 
-    fs.writeFile('' + _name, '', function (err) {
+    fs.writeFile(that.applicationSourcePath + _name, '', function (err) {
         if (err) throw err;
-        fs.writeFile('' + _name, obj, function (err) {
+        fs.writeFile(that.applicationSourcePath + _name, obj, function (err) {
             if (err) throw err;
             console.log('It\'s saved in ' + _name);
         });
