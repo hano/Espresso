@@ -8,6 +8,7 @@ var sys = require('sys');
 var server = require('../core/server.js').Server;
 var Url = require('url');
 var Utils = require('../lib/espresso_utils');
+var io = '';
 
 var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
@@ -19,6 +20,7 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
     this.abstractSyntaxTree = '';
     this.code = '';
     this.SourceCodeFiles = {};
+    this.socket = '';
     //TODO is the / working on not unix systems?  look at require('path')
     this.applicationSourcePath = options.directory ? options.directory + '/' : '';
     console.log(this.applicationSourcePath);
@@ -75,6 +77,12 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
             if (that.reservedURLs[file]) {
                 if (file === 'application') {
                     that.tmpbp.redirectToApplication(response);
+                    if(!io){
+                        io = require('socket.io').listen(8800);
+                        io.sockets.on('connection', function (socket) {
+                            that.socket = socket;
+                        });
+                    }
                 } else if (file === 'getASTLibrary') {
                     console.log(Object.keys(that.SourceCodeFiles));
                     var M = that.browserSimulation(that.SourceCodeFiles['core'].content, that.SourceCodeFiles['ui'].content);
@@ -95,6 +103,8 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                     that.SourceCodeFiles['app'].content = x;
                     that.writeFile(x);
                     that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
+                } else if (file === 'reloadApplication') {
+                    that.socket.emit('espresso', { hello: 'world' });
                 }
             } else {
                 that.tmpbp.deliver(response, _path);

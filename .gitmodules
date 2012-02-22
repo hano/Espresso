@@ -34,3 +34,9 @@
 [submodule "submodules/github/querystring"]
 	path = submodules/github/querystring
 	url = git://github.com/visionmedia/node-querystring.git
+[submodule "submodules/github/socket.io-client"]
+	path = submodules/github/socket.io-client
+	url = git://github.com/LearnBoost/socket.io-client.git
+[submodule "submodules/github/socket.io"]
+	path = submodules/github/socket.io
+	url = git://github.com/LearnBoost/socket.io.git
