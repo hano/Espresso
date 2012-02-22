@@ -9,6 +9,7 @@ var server = require('../core/server.js').Server;
 var Url = require('url');
 var Utils = require('../lib/espresso_utils');
 var io = '';
+var AppCopy = require('./AppCopy').AppCopy;
 
 var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
@@ -23,7 +24,7 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
     this.socket = '';
     //TODO is the / working on not unix systems?  look at require('path')
     this.applicationSourcePath = options.directory ? options.directory + '/' : '';
-    console.log(this.applicationSourcePath);
+    //console.log(this.applicationSourcePath);
 
     CarbonCopy.super_.call(this, options);
 
@@ -32,7 +33,6 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
     this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName, this.tmpBuilderPath);
     this.initTMPApplication(options);
 };
-
 sys.inherits(CarbonCopy, server);
 
 /********* overwrite */
@@ -46,7 +46,11 @@ CarbonCopy.prototype.loadJSONConfig = function (request, response) {
 
 CarbonCopy.prototype.getNewApp = function (request, response) {
 
-    var app = server.prototype.getNewApp.call(this, request, response);
+	var that = this;
+    //var app = server.prototype.getNewApp.call(this, request, response);
+	var app  = new AppCopy({ directory: that.applicationDirectory }, that);
+	this.hostedApps.push(app); /* saving the app in local array */
+  	
     app.__getFiles__ = function (files) {
         var that = this;
         var ret = {};
@@ -78,20 +82,20 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                 if (file === 'application') {
                     that.tmpbp.redirectToApplication(response);
                     if(!io){
-                        io = require('socket.io').listen(8800);
-                        io.sockets.on('connection', function (socket) {
-                            that.socket = socket;
-                        });
+                        //io = require('socket.io').listen(8800);
+                        //io.sockets.on('connection', function (socket) {
+                        //    that.socket = socket;
+                        //});
                     }
                 } else if (file === 'getASTLibrary') {
-                    console.log(Object.keys(that.SourceCodeFiles));
+                    //console.log(Object.keys(that.SourceCodeFiles));
                     var M = that.browserSimulation(that.SourceCodeFiles['core'].content, that.SourceCodeFiles['ui'].content);
                     var ASTLib = that.generateASTfromView(M);
-                    console.log(ASTLib);
+                    //console.log(ASTLib);
                     that.tmpbp.sendFile(ASTLib, response);
                 } else if (file === 'getAbstractSyntaxTree') {
-                    console.log('GET getAbstractSyntaxTree');
-                    console.log(that.SourceCodeFiles['app'].content);
+                    //console.log('GET getAbstractSyntaxTree');
+                    //console.log(that.SourceCodeFiles['app'].content);
                     try{
                         that.tmpbp.sendFile(Narcissus.parser.parse(that.SourceCodeFiles['app'].content), response);
                     }catch(e){
