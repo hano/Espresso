@@ -41,7 +41,7 @@ TMPBuilderProxy.prototype.deliver = function (response, _path) {
 
 //    console.log(file);
     var filePath = this.filePath ? this.filePath : '/Users/mway/Dropbox/masterthesis/git/tmp-builder/';
-
+	//var filePath = this.filePath ? this.filePath : '/Users/mway/Desktop/temp_tmp-builder/';
 //    console.log(_pr + ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
 
     var deliver;

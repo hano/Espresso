@@ -1,5 +1,5 @@
-var Narcissus = require('../submodules/github/narcissus');
-//var Narcissus = require('narcissus');
+//var Narcissus = require('../submodules/github/narcissus');
+var Narcissus = require('narcissus');
 //var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
 var qs = require('../submodules/github/querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
@@ -17,7 +17,7 @@ var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
 var CarbonCopy = exports.CarbonCopy = function (options) {
     var that = this;
-    this.reservedURLs = {getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application' };
+    this.reservedURLs = {getViewLib: 'getViewLib', getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application' };
     this.abstractSyntaxTree = '';
     this.code = '';
     this.SourceCodeFiles = {};
@@ -29,6 +29,10 @@ var CarbonCopy = exports.CarbonCopy = function (options) {
     CarbonCopy.super_.call(this, options);
 
     this.loadJSONConfig();
+
+	this.viewLib = '';
+	this.ASTLib = '';
+	this.AST = {};
 
     this.tmpbp = new tmpBuilderProxy(this.hostname, this.port, this.appName, this.tmpBuilderPath);
     this.initTMPApplication(options);
@@ -44,6 +48,10 @@ CarbonCopy.prototype.loadJSONConfig = function (request, response) {
     server.prototype.loadJSONConfig.call(this, request, response);
 };
 
+/**
+  * overwrite this to get the dependencyTrees and so all files to build the AST
+  *
+*/
 CarbonCopy.prototype.getNewApp = function (request, response) {
 
 	var that = this;
@@ -87,26 +95,28 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                         //    that.socket = socket;
                         //});
                     }
+                } else if (file === 'getViewLib') {
+						if(that.viewLib){
+							that.tmpbp.sendFile(that.viewLib, response);
+						}	
                 } else if (file === 'getASTLibrary') {
                     //console.log(Object.keys(that.SourceCodeFiles));
-                    var M = that.browserSimulation(that.SourceCodeFiles['core'].content, that.SourceCodeFiles['ui'].content);
-                    var ASTLib = that.generateASTfromView(M);
-                    //console.log(ASTLib);
-                    that.tmpbp.sendFile(ASTLib, response);
+					if(that.ASTLib){
+						that.tmpbp.sendFile(that.ASTLib, response);
+					}
                 } else if (file === 'getAbstractSyntaxTree') {
                     //console.log('GET getAbstractSyntaxTree');
                     //console.log(that.SourceCodeFiles['app'].content);
                     try{
-                        that.tmpbp.sendFile(Narcissus.parser.parse(that.SourceCodeFiles['app'].content), response);
+						//old implementation with the complete sourcecode
+                        //that.tmpbp.sendFile(Narcissus.parser.parse(that.SourceCodeFiles['app'].content), response);
+						that.tmpbp.sendFile(that.AST, response);
                     }catch(e){
                         console.log('error parsing source');
                     }
                 } else if (file === 'setAbstractSyntaxTree') {
                     var post = qs.parse(body);
-                    var x = Narcissus.decompiler.pp(JSON.parse(post.setAbstractSyntaxTree));
-                    that.SourceCodeFiles['app'].content = x;
-                    that.writeFile(x);
-                    that.writeFile(post.setAbstractSyntaxTree, 'JSON.js');
+                    that.decompileASTFromBuilderApp(post.setAbstractSyntaxTree);
                 } else if (file === 'reloadApplication') {
                     that.socket.emit('espresso', { hello: 'world' });
                 }
@@ -118,6 +128,17 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
             server.prototype.proxyThat.call(this, request, response);
         }
     });
+};
+
+CarbonCopy.prototype.decompileASTFromBuilderApp = function(data){
+	var that = this;
+	var dependences = JSON.parse(data);
+	Object.keys(dependences).forEach(function(path){
+		var sourceCode = Narcissus.decompiler.pp(dependences[path]);
+		//TODO is an update of the sourcefiles needfull?
+		//if not espresso must be restarted to refresh them. but espresso is writing the source from ast - should be the same - so no refrehsing of the sourcefiles are needed - but to be secure it would be good
+		that.writeFile(sourceCode, path);	
+	});
 };
 
 /********* own implementations */
@@ -136,12 +157,36 @@ CarbonCopy.prototype.initTMPApplication = function (options) {
         var getFiles = {ui:true, core:true, app:true};
         var SourceCodeFiles = app.__getFiles__(getFiles);
         that.setSourceCodeFiles(SourceCodeFiles);
+		that.buildASTFromDependencyTree();
         Utils.log('Builder running at ' + that.hostname + ':' + that.port + '/tmpbuilder');
     });
 };
 
 CarbonCopy.prototype.setSourceCodeFiles = function (SourceCodeFiles) {
-    this.SourceCodeFiles = SourceCodeFiles;
+	this.SourceCodeFiles = SourceCodeFiles;
+	//console.log(this.SourceCodeFiles['app'].framework.dependencyTrees);
+	this.setASTLib();
+};
+
+CarbonCopy.prototype.buildASTFromDependencyTree = function(){
+	//here is all the sourcecode to build a good AST
+	if(this.SourceCodeFiles && this.SourceCodeFiles['app'] && this.SourceCodeFiles['app'].framework && this.SourceCodeFiles['app'].framework.dependencyTrees){
+		var tree = this.SourceCodeFiles['app'].framework.dependencyTrees;
+		var astObjects = {};
+		tree.forEach(function(file){
+			//console.log(file.name);
+			var data = file.file.content;
+			var sourcecode = data.toString("utf8", 0, data.length);
+			astObjects[file.name] = Narcissus.parser.parse(sourcecode);
+		});
+		this.AST = astObjects;
+	}
+	
+};
+
+CarbonCopy.prototype.setASTLib = function(){
+	var M = this.browserSimulation(this.SourceCodeFiles['core'].content, this.SourceCodeFiles['ui'].content);
+	this.ASTLib = this.generateASTfromView(M);
 };
 
 CarbonCopy.prototype.writeFile = function (obj, name) {
@@ -189,6 +234,7 @@ CarbonCopy.prototype.generateASTfromView = function (M, asJSON) {
 
     var viewLib = new ViewLibrary(M);
     viewLib.tmpCode();
+	this.viewLib = viewLib.lib;
 
     var viewsAsAST = {};
     Object.keys(viewLib.lib).forEach(function (key) {
@@ -204,7 +250,7 @@ CarbonCopy.prototype.generateASTfromView = function (M, asJSON) {
     });
 //    TODO MAKE NICE
     viewsAsAST['childViewName'] = Narcissus.parser.parse('content: M.ScrollView.design({label: M.LabelView.design({value: "lala"})});').children[0].target.expression.children[1].children[0].children[0];
-
+	
     return viewsAsAST;
 };
 
