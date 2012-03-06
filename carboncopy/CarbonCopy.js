@@ -117,6 +117,8 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
                 } else if (file === 'setAbstractSyntaxTree') {
                     var post = qs.parse(body);
                     that.decompileASTFromBuilderApp(post.setAbstractSyntaxTree);
+					response.write(JSON.stringify({'code': 1, 'output': 'wrote succ'}), encoding = 'utf8');
+					response.end();
                 } else if (file === 'reloadApplication') {
                     that.socket.emit('espresso', { hello: 'world' });
                 }
@@ -133,6 +135,8 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
 CarbonCopy.prototype.decompileASTFromBuilderApp = function(data){
 	var that = this;
 	var dependences = JSON.parse(data);
+	
+	//TODO: response end erst senden wenn das schreiben succ. war ansonsten err - ist write sync oder async?
 	Object.keys(dependences).forEach(function(path){
 		var sourceCode = Narcissus.decompiler.pp(dependences[path]);
 		//TODO is an update of the sourcefiles needfull?
