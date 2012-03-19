@@ -17,7 +17,7 @@ var tmpBuilderProxy = require('./TMPBuilderProxy').TMPBuilderProxy;
 
 var CarbonCopy = exports.CarbonCopy = function (options) {
     var that = this;
-    this.reservedURLs = {getViewLib: 'getViewLib', getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application' };
+    this.reservedURLs = {getViewLib: 'getViewLib', getASTLibrary:'getASTLibrary', setAbstractSyntaxTree:'setAbstractSyntaxTree', getAbstractSyntaxTree:'getAbstractSyntaxTree', application:'application', stopEspresso: 'stopEspresso' };
     this.abstractSyntaxTree = '';
     this.code = '';
     this.SourceCodeFiles = {};
@@ -86,6 +86,7 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
         var _pr = _path.split('/')[0];
         if (_pr === 'tmpbuilder') {
             var file = _path.split('tmpbuilder/').join('');
+            console.log(file + '!!!!!!!!');
             if (that.reservedURLs[file]) {
                 if (file === 'application') {
                     that.tmpbp.redirectToApplication(response);
@@ -121,6 +122,10 @@ CarbonCopy.prototype.proxyThat = function (request, response) {
 					response.end();
                 } else if (file === 'reloadApplication') {
                     that.socket.emit('espresso', { hello: 'world' });
+                } else if (file === 'stopEspresso') {
+                    response.write(JSON.stringify({'code': 2, 'output': 'closed connection'}), encoding = 'utf8');
+                    response.end();
+                    that.appServer.close();
                 }
             } else {
                 that.tmpbp.deliver(response, _path);
