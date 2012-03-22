@@ -10,9 +10,9 @@
 
 exports.description = 'Command to build native applications';
 
-exports.usage = ('Usage: espresso package <mode> [<target>]'
+exports.usage = ('Usage: espresso package <action> [<target>]'
 + '\n'
-+ '\nAvailable modes:'
++ '\nAvailable actions:'
 + '\n   run                         Build and run project in emulator.'
 + '\n   build                       Build native application package.'
 + '\n'
@@ -84,6 +84,7 @@ exports.run = function (options, positional) {
         options.env.action = action;
         options.env.target = target;
         options.env.file = join(process.cwd(), 'config.json');
+        options.env.applicationDirectory = app.applicationDirectory;
 
         process.stderr.write('package ' + action);
         var child = require('child_process').spawn(command, args, options);

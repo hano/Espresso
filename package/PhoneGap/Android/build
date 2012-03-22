@@ -29,9 +29,15 @@ fi
 
 # setup self-destructive working directory
 cd "`mktemp -d "${TMPDIR-/tmp}/package-phonegap-android.XXXXXXXXXX"`"
-trap "cd '$OLDPWD'; rm -fR '$PWD'" EXIT INT QUIT
+if echo "${ESPRESSO_DEBUG-}" | grep -q package; then
+  : debugging espresso package
+else
+  # activate self-destructive if we're not debugging this component
+  trap "cd '$OLDPWD'; rm -fR '$PWD'" EXIT INT QUIT
+fi
 ln -s "$phonegap_dir/Android" phonegap
 ln -s "$build_dir" src
+ln -s "$applicationDirectory" app
 
 # create android project directory
 android create project \
@@ -54,13 +60,27 @@ cp -R phonegap/xml android-project/res/
 
 # setup icons
 while read px dpi; do
-  if test -d android-project/res/drawable-$dpi; then
-    if test -e android-project/assets/theme/images/icon-$px.png; then
-      cp android-project/assets/theme/images/icon-$px.png \
+  if test -e android-project/assets/theme/images/appicon-$px.png; then
+    if ! test -d android-project/res/drawable-$dpi; then
+      mkdir android-project/res/drawable-$dpi
+    fi
+    cp android-project/assets/theme/images/appicon-$px.png \
+        android-project/res/drawable-$dpi/ic_launcher.png
+  elif test "${autoScaleIcon-false}" = true; then
+    if ! test -d android-project/res/drawable-$dpi; then
+      mkdir android-project/res/drawable-$dpi
+    fi
+    if test -e android-project/assets/theme/images/appicon.png; then
+      convert android-project/assets/theme/images/appicon.png \
+          -resize ${px}x$px \
           android-project/res/drawable-$dpi/ic_launcher.png
+    else
+      echo "Warning: missing appicon.png to autoScaleIcon" >&2
+      continue
     fi
   else
-    echo "Skipping $dpi" >&2
+    echo "Warning: missing appicon-$px.png and autoScaleIcon is not true" >&2
+    continue
   fi
 done<<EOF
 36 ldpi
@@ -102,6 +122,8 @@ gsedi android-project/assets/index.html '
 \2|
   }
 '
+
+add-plugins
 
 # build android package
 (cd android-project && ant --noconfig "$mode")
