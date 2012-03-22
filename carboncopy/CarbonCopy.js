@@ -1,5 +1,5 @@
-//var Narcissus = require('../submodules/github/narcissus');
-var Narcissus = require('narcissus');
+var Narcissus = require('../submodules/github/narcissus');
+//var Narcissus = require('narcissus');
 //var htmlparser = require("../submodules/github/tautologistics/lib/htmlparser");
 var qs = require('../submodules/github/querystring');
 var ViewLibrary = require('./ViewLibrary').ViewLibrary;
@@ -214,7 +214,7 @@ CarbonCopy.prototype.writeFile = function (obj, name) {
 }
 
 CarbonCopy.prototype.browserSimulation = function () {
-    var jsdom = require("jsdom").jsdom;
+//    var jsdom = require("jsdom").jsdom;
 
     var jsdom = require("jsdom").jsdom,
             document = jsdom(null, null),
