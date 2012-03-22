@@ -28,9 +28,6 @@
 [submodule "submodules/github/narcissus"]
 	path = submodules/github/narcissus
 	url = https://github.com/mozilla/narcissus.git
-[submodule "submodules/github/jsdom"]
-	path = submodules/github/jsdom
-	url = https://github.com/tmpvar/jsdom.git
 [submodule "submodules/github/querystring"]
 	path = submodules/github/querystring
 	url = git://github.com/visionmedia/node-querystring.git
