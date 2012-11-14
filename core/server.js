@@ -15,6 +15,7 @@ var Utils = require('../lib/espresso_utils');
 var Proxy = require('./proxy').Proxy;
 var App = require('./app').App;
 
+var RemoteDebugMessage = require('../remoteDebugMessage/remoteDebugMessage');
 /**
  * @class
  *
@@ -181,9 +182,12 @@ Server.prototype.proxyThat = function (request, response) {
         .on('complete', function (data, resp) {
             Utils.log('Finished request to: ' + url);
           });
+      } else if(_pr === RemoteDebugMessage.getUrl()) {
+          RemoteDebugMessage.log(body);
+          _respondSuccess('', 200);
       } else {
-        var proxyError = 'No proxy found for: ' + _pr;
-        _respondErr(proxyError, 500);
+          var proxyError = 'No proxy found for: ' + _pr;
+          _respondErr(proxyError, 500);
       }
 
     });
@@ -220,7 +224,6 @@ Server.prototype.runDevServer = function () {
   this.appServer = Http.createServer(function (request, response) {
       var _file;
       var _requestedURL = Url.parse(request.url);
-
       if ((_requestedURL.pathname === '/' + appName) || (_requestedURL.pathname === '/' + appName + '/')) {
         response.writeHead(301, { Location: '/' + appName + '/' + 'index.html' });
         response.end();
@@ -244,7 +247,7 @@ Server.prototype.runDevServer = function () {
         Utils.log(_requestedURL.pathname);
         _file = that.files[_requestedURL.pathname];
         if (!_file) {
-          that.proxyThat(request, response);
+            that.proxyThat(request, response);
         } else {
           that.deliverThat(response, _file);
         }
