@@ -19,6 +19,7 @@ var Style = require('../lib/color');
 var Utils = require('../lib/espresso_utils');
 var File = require('../core/file').File;
 var Renderer = require('../lib/renderer');
+var normalize = require('path').normalize;
 
 // TODO: Implement transaction mechanism to roll back on error
 
@@ -26,11 +27,13 @@ var generate = exports.generate = function generate(options) {
   var espressoPath = __dirname + '/..';
   var templatePath = __dirname + '/templates';   
   var templateRenderer = Renderer.createRenderer(templatePath);
+  var customConfigPath = options.config;
   var tools = ['config.json']; // array with names of build tools, used in the a new project.
   var outPut = [];
   var path;
   var outPutFiles = [
     { src: 'style.css', dst: 'app/resources/base/style.css' },
+    { src: 'appicon.png', dst: 'app/resources/base/images/appicon.png' },
     { src: 'Icon.png', dst: 'app/resources/base/images/Icon.png' },
     { src: 'Icon-72.png', dst: 'app/resources/base/images/Icon-72.png' },
     { src: 'Icon@2x.png', dst: 'app/resources/base/images/Icon@2x.png' },
@@ -123,6 +126,24 @@ var generate = exports.generate = function generate(options) {
   var generateBuildTools = function generateBuildTools(callback) {
     var templateFile = tools.shift();
     var outputPath = path + projectName + '/' + templateFile;
+    /* custom config stuff */
+    if(customConfigPath){
+      try{
+        var c  = JSON.parse(Fs.readFileSync(__dirname + '/templates/' + templateFile, 'utf8'));
+        var cc = JSON.parse(Fs.readFileSync(customConfigPath, 'utf8'));
+        for(var prop in cc) {
+          c[prop] = cc[prop];
+        }
+        c['name'] = '{{appName}}';
+        var content = JSON.stringify(c);
+        Fs.writeFileSync(__dirname + '/templates/_config.json', content, 'utf8');
+        templateFile = '_config.json';
+        outputPath = path + projectName + '/config.json';
+      }catch(e){
+        templateFile = 'config.json';
+      }
+    }
+
     var ctx = {
       espresso: espressoPath,
       appName: projectName
@@ -132,7 +153,10 @@ var generate = exports.generate = function generate(options) {
         templateFile: templateFile,
         ctx: ctx,
         outputPath: outputPath,
-        callback: callback
+        callback: function(){
+          Fs.unlink(__dirname + '/templates/_config.json');
+          callback();
+        }
       });
   };
 
@@ -219,7 +243,7 @@ var generate = exports.generate = function generate(options) {
     var currentFile = files.shift();
 
     if (currentFile) {
-      var fileTarget = currentFile.path.split('frameworks/')[1];
+      var fileTarget = currentFile.path.split(normalize('frameworks/'))[1];
       fileTarget = fileTarget.split(currentFile.getBaseName() + currentFile.getFileExtension())[0];
       var streamPath = path + projectName + '/frameworks/' + fileTarget + 
         currentFile.getBaseName() + currentFile.getFileExtension();

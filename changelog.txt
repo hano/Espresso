@@ -1,3 +1,26 @@
+** Version 1.3.0 - Date 03.11.2012 **
+
+  * Add core functionality to preload images
+  * Fixed issue when running on windows: The first argument was node.exe (thx to Tom Peplow)
+
+** Version 1.2.0 - Date 02.07.2012 **
+
+  * Switched from PhoneGap to Cordova (version 1.9)
+  * Added support for Cordova plugins
+
+** Version 1.1.0 - Date 23.04.2012 **
+
+  * Fixed missing quotes in view template
+  * Added generator to start local socket server
+  * Fixed iOS simulator for xcode 4.3 (updated ios-sim)
+  * Added validators to preSort task
+  * Fixed the native packaging for ios and android
+
+** Version 1.0.0 - Date 25.01.2012 **
+
+  * Added param to customize the default config.json
+  * Fixed i18n-duplicates: They now don't get merged into APPNAME_App.js
+
 ** Version 1.0.0RC1 - Date 13.01.2012 **
 
   * Added support for web fonts as resources.

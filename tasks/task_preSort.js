@@ -11,6 +11,11 @@
 
 var Task_PreSort,
     Task = require('./task').Task;
+var normalize = require('path').normalize;
+
+var normalize4RegExp = function (name) {
+  return normalize(name).replace(/\\/g, '\\\\');
+};
 
 /**
  * @class
@@ -53,23 +58,36 @@ Task_PreSort.prototype.duty = function(framework,callback){
         _views = [],
         _stores = [],
         _misc = [],
-        _sorted = [];
+        _sorted = [],
+        _validators = [];
 
     _files.forEach(function(file) {
-        if(file.path.search('/controllers/')!== -1) {
+
+        var path = normalize(file.path);
+
+        /* if this is an i18n file, skip it */
+        if (path.search(normalize4RegExp('/i18n/')) !== -1) {
+            return;
+        }
+
+        if (path.search(normalize4RegExp('/controllers/')) !== -1) {
             _controllers.push(file);
-        } else if(file.path.search('/views/')!== -1) {
+        } else if (path.search(normalize4RegExp('/views/')) !== -1) {
             _views.push(file);
-        } else if(file.path.search('/models/')!== -1) {
+        } else if (path.search(normalize4RegExp('/models/')) !== -1) {
             _models.push(file);
-        } else if(file.path.search('/stores/')!== -1) {
+        } else if (path.search(normalize4RegExp('/stores/')) !== -1) {
             _stores.push(file);
+        } else if (path.search(normalize4RegExp('/validators/')) !== -1) {
+            _validators.push(file);
+        } else if (path.search(normalize4RegExp('/plugins/')) !== -1) {
+            _validators.push(file);
         } else {
             _misc.push(file);
         }
     });
 
-     _sorted = _sorted.concat(_models, _stores, _controllers, _views,_misc);
+     _sorted = _sorted.concat(_models, _stores, _controllers, _validators, _views,_misc);
     framework.files = _sorted;
     callback(framework);
 };

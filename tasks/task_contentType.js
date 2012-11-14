@@ -40,7 +40,8 @@ Task_ContentType = exports.Task_ContentType = function() {
     ".ttf"     :  "application/x-font-ttf",
     ".otf"     :  "font/opentype",
     ".eot"     :  "application/vnd.ms-fontobject",
-    ".woff"    :  "application/x-woff"
+    ".m4a"     :  "audio/mp4a-latm",
+    ".woff"    :  "application/x-font-woff"
   };
 };
 

@@ -23,7 +23,7 @@ dump = function (x) {
             + ', value: ' + JSON.stringify(value)
             + ')');
     };
-    prn('android:' + key + '=' + JSON.stringify(value));
+    prn([value, key].join(' '));
   });
 };
 

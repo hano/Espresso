@@ -10,6 +10,7 @@
 
 var E = require('./e').E;
 var File = require('./file').File;
+var normalize = require('path').normalize;
 
 /**
  * @class
@@ -48,6 +49,8 @@ var Framework = exports.Framework = function (properties) {
   this.mergedFiles     = [];
   this.dependencyTrees = [];
   this.taskChain       = [];
+  this.filesToPreload  = [];
+  this.preloader       = true;
 
   /* Adding the properties fot this Frameworks */
   if (properties) {
@@ -129,7 +132,6 @@ Framework.prototype.readFiles = function (callback) {
 Framework.prototype.getFiles = function getFiles(path, callback) {
   var that = this;
   var manifest = path + '/manifest.json';
-
   this._e_.fs.stat(manifest, function (err, stat) {
       if (err) {
         that.browseFiles(path, callback);
@@ -197,11 +199,12 @@ Framework.prototype.browseFiles = function (path, callback) {
      * @param path, the path to check.
      */
     that.checkIfFileShouldBeExcluded = function (path) {
+      path = normalize(path);
       // exclude hidden files
       if (/\/\.[\w]+\/(\.[\w]+)?/.test(path)) {
         return true;
       }
-      var _fileBaseName = path.split('/');
+      var _fileBaseName = path.split(normalize('/'));
       if (that.checkIfFolderShouldBeExcluded(path)) {
         return true;
       }
@@ -213,12 +216,18 @@ Framework.prototype.browseFiles = function (path, callback) {
      */
     that.checkIfFolderShouldBeExcluded = function (path) {
 
+      var ret = false;
       self.excludedFolders.forEach(function (folder) {
-          if (path.search('/' + folder + '/') !== -1) {
-            return true;
+          // Replace() escapes backslashes of DOS-style paths to not interfere
+          // with JavaScript's RegExp.
+          // We should probably escape all magic characters...
+          var pattern =
+              new RegExp(normalize('/' + folder + '/').replace(/\\/g, '\\\\'));
+          if (path.search(pattern) !== -1) {
+            ret = true;
           }
         });
-      return false;
+      return ret;
     };
 
     that.browse = function (path) {
